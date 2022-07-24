@@ -1,10 +1,19 @@
 import time
 from selenium import webdriver
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
+from tkinter import messagebox
+
+
+def error_message(string):
+    messagebox.showerror("Error", string)
+
+
+def message(string):
+    messagebox.showinfo("Notice", string)
 
 
 class BrowserController:
@@ -32,10 +41,10 @@ class BrowserController:
         terms_and_conditions = driver.find_element(By.CLASS_NAME, 'custom-control-label').click()
         submit = driver.find_element(By.CLASS_NAME, 'btn.btn-primary').click()
         try:
-            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'dd__logOut')))
+            WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, 'dd__logOut')))
             print('Successful login')
-        except NoSuchElementException:
-            print('Incorrect login/password')
+        except TimeoutException:
+            error_message("Incorrect login/password")
             driver.quit()
         lea_select = Select(driver.find_element(By.XPATH, '//*[@id="org-select"]'))
 
@@ -49,7 +58,7 @@ class BrowserController:
             print(op_value)
             print("School switch successful")
         except NameError:
-            print("LEA code could not be found")
+            error_message("LEA code could not be found")
             driver.quit()
         time.sleep(2)
 
@@ -91,7 +100,7 @@ class BrowserController:
                     EC.presence_of_element_located((By.XPATH, '//*[@id="ReportViewer1_ctl08_ctl03"]'))
                 )
             except TimeoutError:
-                print("The page took too long to load")
+                error_message("The page took too long to load")
                 driver.quit()
 
             year_select = Select(driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl03_ddValue'))
@@ -101,23 +110,22 @@ class BrowserController:
                     EC.presence_of_element_located((By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
                 )
             except NoSuchElementException:
-                print("This year doesn't exist for report " + link + ". This report will be skipped.")
-                print()
+                message("This year doesn't exist for report " + link + ". This report will be skipped.")
                 continue
             except TimeoutError:
-                print("The page took too long to load")
+                error_message("The page took too long to load")
+                driver.quit()
 
             time.sleep(2)
             status = Select(driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
             try:
-                counter = 0
                 for option in status.options:
                     if option.text == 'SELPA Approved' or option.text == 'Certified' or option.text == 'LEA Approved':
                         status_string = option.text
                 status.select_by_visible_text(status_string)
 
             except:
-                print("Only non-certified reports exist for " + link + ". This report will be skipped.")
+                message("Only non-certified reports exist for " + link + ". This report will be skipped.")
                 continue
             time.sleep(2)
 
@@ -127,7 +135,7 @@ class BrowserController:
                 WebDriverWait(driver, 450).until(EC.text_to_be_present_in_element_attribute(
                     (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled', 'false'))
             except TimeoutError:
-                print("The report took too long to load!")
+                error_message("The report took too long to load!")
                 driver.quit()
             save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00"]').click()
             time.sleep(1)
