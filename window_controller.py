@@ -18,22 +18,20 @@ for i in school_data.keys():
 class WindowController:
 
     def __init__(self):
-
         def check(event):
             value = event.widget.get()
             if value == '':
-                data = school[0:200]
+                data = school[0:100]
             else:
                 data = []
             counter = 0
             for item in school:
-                if counter > 200:
+                if counter > 100:
                     break
                 if value.lower() in item.lower():
                     data.append(item)
                     counter+=1
             update(data)
-
 
         def update(data):
             # Clear the Combobox
@@ -43,7 +41,7 @@ class WindowController:
                 self.l_list.insert(END, value)
 
         window = Tk()
-        window.geometry("550x400")
+        window.geometry("500x500")
         window.title("CALPADS report fetcher")
         self.window = window
 
@@ -55,16 +53,16 @@ class WindowController:
         self.y_list['values'] = ["2022-2023", "2021-2022", "2020-2021", "2019-2020", "2018-2019", "2017-2018",
                                  "2016-2017",
                                  "2015-2016"]
-        self.y_list.place(x=165, y=170)
+        self.y_list.place(x=190, y=320)
 
         self.folder_path = StringVar()
         self.folder_button = Button(window, text="File selector", command=lambda : self.dir_searcher())
-        self.folder_button.place(x=200, y=270)
+        self.folder_button.place(x=200, y=400)
 
         folder_label = Label(window, text="Select a folder for the downloads:")
-        folder_label.place(x=10, y=265)
+        folder_label.place(x=10, y=400)
         self.current_location = Label(window, textvariable=self.folder_path)
-        self.current_location.place(x=20,y=310)
+        self.current_location.place(x=5, y=430)
 
         u_label = Label(window, text="Calpads Username:")
         u_label.place(x=20, y=20)
@@ -72,33 +70,34 @@ class WindowController:
         p_label = Label(window, text="Calpads Password:")
         p_label.place(x=21, y=60)
 
-        l_label = Label(window, text="Search for and select the \n LEA Code/School  from the list ")
+        l_label = Label(window, text="Search for and select the \n LEA Code/School  from the list:")
         l_label.place(x=0, y=100)
 
         y_label = Label(window, text="Report year:")
-        y_label.place(x=55, y=170)
+        y_label.place(x=55, y=320)
 
         t_label = Label(window, text="Which report period?")
-        t_label.place(x=10, y=210)
+        t_label.place(x=10, y=360)
 
-        self.u_box = Entry(window, width=30)
-        self.u_box.place(x=165, y=20)
+        self.u_box = Entry(window, width=35)
+        self.u_box.place(x=180, y=20)
 
-        self.p_box = Entry(window, show="*",width=30)
-        self.p_box.place(x=165, y=60)
+        self.p_box = Entry(window, show="*", width=35)
+        self.p_box.place(x=180, y=60)
 
-        self.l_box = Entry(window, width=35)
+        self.l_box = Entry(window, width=40)
         self.l_box.bind('<KeyRelease>', check)
-        self.l_box.place(x=165, y=100)
-        self.l_list = Listbox(window, width=60)
-        self.l_list.place(x=165,y=140)
+        self.l_box.place(x=180, y=100)
+        self.l_list = Listbox(window, width=50, selectmode=SINGLE)
+        self.l_list.configure(exportselection=False)
+        self.l_list.place(x=180,y=140)
         update(school)
 
         self.t_list = OptionMenu(window, self.menu, "Fall 1", "Fall 2", "EOY1", "EOY2", "EOY3", "EOY4")
-        self.t_list.place(x=170, y=210)
+        self.t_list.place(x=190, y=350)
 
         self.submit = Button(window, text="Submit", command=lambda : self.submit_press())
-        self.submit.place(x=170, y=350)
+        self.submit.place(x=200, y=460)
 
         def on_closing():
             if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -108,7 +107,7 @@ class WindowController:
         window.mainloop()
 
     def submit_press(self):
-        if self.n.get() == 'Please choose the year' or self.menu.get() == "Select a Term" or self.u_box.get() == "" or self.p_box.get() == "" or self.l_list.get() == "":
+        if self.n.get() == 'Please choose the year' or self.menu.get() == "Select a Term" or self.u_box.get() == "" or self.p_box.get() == "" or self.l_list.curselection() == "":
             messagebox.showerror("Error", "Please input data for every field")
             return
         self.submit['state'] = DISABLED
@@ -123,7 +122,7 @@ class WindowController:
         self.current_location['text'] = ("The current download location is: " + self.folder_path.__str__())
 
     def browser_create(self):
-        browser = bc.BrowserController(self.u_box.get(), self.p_box.get(), self.l_list.get()[:7], self.menu.get(),self.n.get(),self.folder_path.get())
+        browser = bc.BrowserController(self.u_box.get(), self.p_box.get(), self.l_list.get(self.l_list.curselection())[:7], self.menu.get(),self.n.get(),self.folder_path.get())
         browser.run_browser()
 
     def quit_program(self):
