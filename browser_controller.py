@@ -6,6 +6,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from tkinter import messagebox
+import sys
 
 
 def error_message(string):
@@ -17,16 +18,18 @@ def message(string):
 
 
 class BrowserController:
-    def __init__(self, username, password, lea_code, term_input, year, file_location):
+    def __init__(self, username, password, lea_code, term_input, year, file_location, file_type):
         self.username = username
         self.password = password
         self.lea_code = lea_code
         self.term_input = term_input
         self.year = year
-        self.file_location = file_location
-
+        self.file_location = file_location.replace("/", "\\")
+        self.file_type = file_type
         self.run_browser()
 
+    def close_browser(self):
+        self.driver.quit()
 
     def run_browser(self):
         options = webdriver.ChromeOptions()
@@ -55,8 +58,6 @@ class BrowserController:
 
         try:
             lea_select.select_by_value(op_value)
-            print(op_value)
-            print("School switch successful")
         except NameError:
             error_message("LEA code could not be found")
             driver.quit()
@@ -90,9 +91,10 @@ class BrowserController:
             link_list.append(t.get_attribute('href'))
         print(link_list)
 
+        year_error = []
+        status_error = []
         for link in link_list:
             driver.get(link)
-
             try:
                 WebDriverWait(driver, 30).until(
                     EC.frame_to_be_available_and_switch_to_it((By.XPATH, '//*[@id="reports"]/div/div/div/iframe')))
@@ -110,22 +112,21 @@ class BrowserController:
                     EC.presence_of_element_located((By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
                 )
             except NoSuchElementException:
-                message("This year doesn't exist for report " + link + ". This report will be skipped.")
+                year_error.append(link)
                 continue
             except TimeoutError:
                 error_message("The page took too long to load")
                 driver.quit()
 
-            time.sleep(2)
+            time.sleep(3)
             status = Select(driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
             try:
                 for option in status.options:
                     if option.text == 'SELPA Approved' or option.text == 'Certified' or option.text == 'LEA Approved':
                         status_string = option.text
                 status.select_by_visible_text(status_string)
-
             except:
-                message("Only non-certified reports exist for " + link + ". This report will be skipped.")
+                status_error.append(link)
                 continue
             time.sleep(2)
 
@@ -139,9 +140,22 @@ class BrowserController:
                 driver.quit()
             save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00"]').click()
             time.sleep(1)
-            pdf = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[4]').click()
+            if(self.file_type == 'PDF'):
+                driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[4]').click()
+            elif(self.file_type == 'CSV'):
+                driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[7]').click()
+            elif(self.file_type == 'EXCEL'):
+                driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[2]').click()
+            else:
+                error_message("The file type specified does not exist")
 
         driver.quit()
+        if len(status_error) != 0:
+            status_return_string = " ,".join(status_error)
+            message("Only non-certified reports exist for " + status_return_string + ". These reports were skipped.")
+        if len(year_error) != 0:
+            year_return_string = " ,".join(year_error)
+            message("This year doesn't exist for report(s) " + year_return_string + ". These reports were skipped")
+        message("The process has finished")
+        sys.exit("Finished")
 
-    def close_browser(self):
-        self.driver.quit()
