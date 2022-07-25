@@ -11,7 +11,7 @@ json_file_path = 'school_data.json'
 with open(json_file_path, 'r') as j:
     school_data = json.loads(j.read())
 for i in school_data.keys():
-    school.append(i[-7:] + " - " + school_data[i])
+    school.append(school_data[i] + " - "  + i[-7:])
 
 
 class WindowController:
@@ -40,7 +40,7 @@ class WindowController:
                 self.l_list.insert(END, value)
 
         window = Tk()
-        window.geometry("500x550")
+        window.geometry("550x550")
         window.title("CALPADS report fetcher")
         self.window = window
 
@@ -122,7 +122,7 @@ class WindowController:
 
     def browser_create(self):
         self.browser = bc.BrowserController(self.u_box.get(), self.p_box.get(),
-                                       self.l_list.get(self.l_list.curselection())[:7],
+                                       self.l_list.get(self.l_list.curselection())[-7:],
                                        self.term.get(), self.year.get(), self.folder_path.get(), self.file_type.get())
         self.browser.run_browser()
 
