@@ -7,7 +7,7 @@ from tkinter import messagebox
 import json
 
 school = []
-json_file_path = 'school_data.json'
+json_file_path = 'data/school_data.json'
 with open(json_file_path, 'r') as j:
     school_data = json.loads(j.read())
 for i in school_data.keys():
