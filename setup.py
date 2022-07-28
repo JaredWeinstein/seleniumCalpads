@@ -10,5 +10,5 @@ setup(
     entry_points={
         'console_scripts': ['get_calpads=src.main:main']
     },
-    package_data={'': ['*.json']}
+    package_data={'': ['*.json', '*.bat']}
 )

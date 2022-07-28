@@ -1,22 +1,34 @@
+import sys
 import tkinter.ttk as ttk
 from threading import Thread
 from tkinter import *
 from tkinter import filedialog
-import browser_controller as bc
+from src.browser import Browser
 from tkinter import messagebox
 import json
+import os
+
+
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 
 school = []
-json_file_path = 'data/school_data.json'
+json_file_path = resource_path('school_data.json')
 with open(json_file_path, 'r') as j:
     school_data = json.loads(j.read())
 for i in school_data.keys():
-    school.append(school_data[i] + " - "  + i[-7:])
+    school.append(school_data[i] + " - " + i[-7:])
+school.sort()
 
 
-class WindowController:
+class Window:
 
     def __init__(self):
+        self.curr = None
+
         def check(event):
             value = event.widget.get()
             if value == '':
@@ -38,6 +50,14 @@ class WindowController:
             # Add values to the combobox
             for value in data:
                 self.l_list.insert(END, value)
+
+        self.curr_lea = ""
+        self.curr_pass = ""
+        self.curr_user = ""
+        self.curr_year = ""
+        self.curr_term = ""
+        self.curr_folder = ""
+        self.curr_file_type = ""
 
         window = Tk()
         window.geometry("550x550")
@@ -96,7 +116,9 @@ class WindowController:
         self.current_location.place(x=5, y=480)
 
         self.submit = Button(window, text="Submit", command=lambda: self.submit_press())
-        self.submit.place(x=200, y=510)
+        self.submit.place(x=150, y=510)
+
+        self.resubmit = Button(window, text="Continue downloading with the same parameters?", command=lambda: self.resubmit_press())
 
         def on_closing():
             if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -108,12 +130,24 @@ class WindowController:
 
     def submit_press(self):
         if self.year.get() == 'Please choose the year' or self.term.get() == "Select a Term" or self.u_box.get() == "" \
-                or self.p_box.get() == "" or self.l_list.curselection() == "":
+                or self.p_box.get() == "" or self.l_list.curselection() == "" or self.folder_path.get() == "" \
+                or self.file_type.get() == "":
             messagebox.showerror("Error", "Please input data for every field")
             return
-        self.submit['state'] = DISABLED
+        self.curr_user = self.u_box.get()
+        self.curr_pass = self.p_box.get()
+        self.curr_lea = self.l_list.get(self.l_list.curselection())[-7:]
+        self.curr_term = self.term.get()
+        self.curr_year = self.year.get()
+        self.curr_folder = self.folder_path.get()
+        self.curr_file_type = self.file_type.get()
+        self.submit['state'] = "disabled"
+
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
+
+    def enable_button(self):
+        self.submit['state'] = "normal"
 
     def dir_searcher(self):
         filename = filedialog.askdirectory()
@@ -121,10 +155,20 @@ class WindowController:
         self.current_location['text'] = ("The current download location is: " + self.folder_path.__str__())
 
     def browser_create(self):
-        self.browser = bc.BrowserController(self.u_box.get(), self.p_box.get(),
-                                       self.l_list.get(self.l_list.curselection())[-7:],
-                                       self.term.get(), self.year.get(), self.folder_path.get(), self.file_type.get())
+        self.browser = Browser(self.curr_user, self.curr_pass, self.curr_lea, self.curr_term, self.curr_year,
+                               self.curr_folder, self.curr_file_type, self, self.curr)
         self.browser.run_browser()
 
     def quit_program(self):
         self.window.quit()
+
+    def get_browser_info(self, curr_links):
+        self.submit['state'] = "normal"
+        self.resubmit.place(x=250, y=510)
+        self.curr = curr_links
+
+    def resubmit_press(self):
+        self.submit['state'] = "disabled"
+        self.resubmit['state'] = "disabled"
+        t1 = Thread(target=self.browser_create, daemon=True)
+        t1.start()

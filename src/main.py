@@ -1,8 +1,8 @@
-from window_controller import WindowController
+from src.window import Window
 
 
 def main():
-    WindowController()
+    Window()
 
 
 if __name__ == "__main__":
