@@ -13,9 +13,8 @@ import sys
 def error_message(string):
     messagebox.showerror("Error", string)
 
-
 def message(string):
-    messagebox.showinfo("Notice", string)
+    messagebox.showinfo("Info", string)
 
 def resource_path(relative_path):
     try:
@@ -45,6 +44,10 @@ class Browser:
         options = webdriver.ChromeOptions()
         prefs = {'download.default_directory': self.file_location}
         options.add_experimental_option('prefs', prefs)
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--window-size=1920,1000")
         self.driver = webdriver.Chrome(resource_path('./driver/chromedriver.exe'), options=options)
         with self.driver as driver:
             driver.get(
@@ -117,9 +120,8 @@ class Browser:
             else:
                 link_list = self.curr_link
 
-            year_error = []
-            status_error = []
             for link in link_list:
+                time.sleep(2)
                 driver.get(link)
                 try:
                     WebDriverWait(driver, 30).until(
@@ -140,7 +142,7 @@ class Browser:
                         EC.presence_of_element_located((By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
                     )
                 except NoSuchElementException:
-                    year_error.append(link)
+                    print("This year doesn't exist for report(s) " + link + ". This report was skipped")
                     continue
                 except TimeoutError:
                     error_message("The page took too long to load")
@@ -155,13 +157,14 @@ class Browser:
                             status_string = option.text
                     status.select_by_visible_text(status_string)
                 except:
-                    status_error.append(link)
+                    print("Only non-certified reports exist for " + link + ". This report was skipped.")
                     continue
                 time.sleep(2)
 
                 view_report = driver.find_element(By.CSS_SELECTOR, "#ReportViewer1_ctl08_ctl00").click()
 
                 try:
+                    print("Waiting for document " + link)
                     WebDriverWait(driver, 450).until(EC.text_to_be_present_in_element_attribute(
                         (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled',
                         'false'))
@@ -169,26 +172,27 @@ class Browser:
                     error_message("The report took too long to load!")
                     self.window.get_browser_info(link_list[current_index:])
                     driver.quit()
-                save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00"]').click()
+
                 time.sleep(1)
-                if (self.file_type == 'PDF'):
-                    driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[4]').click()
-                elif (self.file_type == 'CSV'):
-                    driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[7]').click()
-                elif (self.file_type == 'EXCEL'):
-                    driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]/div[2]').click()
+                save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]')
+                driver.execute_script("arguments[0].click();", save)
+                time.sleep(1)
+
+                file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
+                if self.file_type == 'PDF':
+                    pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
+                    webdriver.ActionChains(driver).move_to_element(pdf).click(pdf).perform()
+                elif self.file_type == 'CSV':
+                    csv = file.find_element(By.XPATH, "//*[text()='CSV']")
+                    webdriver.ActionChains(driver).move_to_element(csv).click(csv).perform()
+                elif self.file_type == 'EXCEL':
+                    excel = file.find_element(By.XPATH, "//*[text()='EXCEL']")
+                    webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
+
                 else:
                     error_message("The file type specified does not exist")
                 current_index += 1
 
             driver.quit()
-            if len(status_error) != 0:
-                status_return_string = " ,".join(status_error)
-                message(
-                    "Only non-certified reports exist for " + status_return_string + ". These reports were skipped.")
-            if len(year_error) != 0:
-                year_return_string = " ,".join(year_error)
-                message(
-                    "This year doesn't exist for report(s) " + year_return_string + ". These reports were skipped")
             message("The process has finished")
-            sys.exit("Finished")
+            sys.exit()

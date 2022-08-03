@@ -1,4 +1,4 @@
-from src.window import Window
+from src.cert_reports_window import Window
 
 
 def main():

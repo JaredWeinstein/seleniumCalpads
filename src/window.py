@@ -141,7 +141,7 @@ class Window:
         self.curr_year = self.year.get()
         self.curr_folder = self.folder_path.get()
         self.curr_file_type = self.file_type.get()
-        self.submit['state'] = "disabled"
+        # self.submit['state'] = "disabled"
 
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
