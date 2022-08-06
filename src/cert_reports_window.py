@@ -35,12 +35,12 @@ class Window:
         def check(event):
             value = event.widget.get()
             if value == '':
-                data = school[0:100]
+                data = school[0:400]
             else:
                 data = []
             counter = 0
             for item in school:
-                if counter > 100:
+                if counter > 400:
                     break
                 if value.lower() in item.lower():
                     data.append(item)
@@ -117,9 +117,9 @@ class Window:
                             "2015-2016"]
         y_list.place(x=650, y=40)
 
-        dry_run_button = Button(window, text="Generate all report periods\n for selected year", command=lambda: self.submit_dry_run(),
+        self.dry_run_button = Button(window, text="Generate all report periods\n for selected year", command=lambda: self.submit_dry_run(),
                                 bg="GreenYellow")
-        dry_run_button.place(x=30, y=375)
+        self.dry_run_button.place(x=30, y=375)
 
         # Widgets relating to the term
         t_label = Label(window, text="Which report period?")
@@ -177,6 +177,7 @@ class Window:
         self.curr_pass = self.p_box.get()
         self.curr_year = self.year.get()
         self.dry_run = True
+        self.dry_run_button['state'] = 'disabled'
 
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
@@ -190,6 +191,7 @@ class Window:
         self.file_type_list['state'] = 'normal'
         self.folder_button['state'] = 'normal'
         self.submit['state'] = 'normal'
+        self.dry_run_button['state'] = 'normal'
 
     def submit_press(self):
         if self.year.get() == 'Please choose the year' or self.term.get() == "Select a Term" or self.u_box.get() == "" \
@@ -243,7 +245,7 @@ class Window:
     def get_browser_info(self, curr_school, link):
         self.submit['state'] = "normal"
         self.resubmit['state'] = "normal"
-        if curr_school is not None and link is not None:
+        if curr_school is not None:
             print("browser info saved")
             self.resubmit.place(x=200, y=600)
             self.curr_link = link

@@ -51,16 +51,16 @@ class Browser:
             for school in self.lea_codes:
                 lea_code = school[-7:]
                 options = webdriver.ChromeOptions()
-                school_dir = os.path.join(self.file_location, school[:-10])
-                if not os.path.exists(school_dir):
-                    os.mkdir(school_dir)
                 if not dry_run:
+                    school_dir = os.path.join(self.file_location, school[:-10])
+                    if not os.path.exists(school_dir):
+                        os.mkdir(school_dir)
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
-                options.add_argument("--headless")
-                options.add_argument("--no-sandbox")
-                options.add_argument("--disable-gpu")
-                options.add_argument("--window-size=1920,1000")
+                # options.add_argument("--headless")
+                # options.add_argument("--no-sandbox")
+                # options.add_argument("--disable-gpu")
+                # options.add_argument("--window-size=1920,1000")
                 self.driver = webdriver.Chrome(resource_path('./driver/chromedriver.exe'), options=options)
                 with self.driver as driver:
                     driver.get(
@@ -80,7 +80,7 @@ class Browser:
                     terms_and_conditions = driver.find_element(By.CLASS_NAME, 'custom-control-label').click()
                     submit = driver.find_element(By.CLASS_NAME, 'btn.btn-primary').click()
                     try:
-                        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, 'dd__logOut')))
+                        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.ID, 'dd__logOut')))
                         print('Successful login')
                     except TimeoutException:
                         error_message("Incorrect login/password")
@@ -88,11 +88,14 @@ class Browser:
                         driver.quit()
 
                     time.sleep(2)
-                    driver.get('https://www.calpads.org/StateReporting/Certification')
-                    self.switch_lea(lea_code)
-                    self.curr_school = school
-                    year_selector = Select(driver.find_element(By.XPATH, '//*[@id="AcademicYear"]'))
-                    year_selector.select_by_value(self.year)
+                    try:
+                        driver.get('https://www.calpads.org/StateReporting/Certification')
+                        self.switch_lea(lea_code)
+                        self.curr_school = school
+                        year_selector = Select(driver.find_element(By.XPATH, '//*[@id="AcademicYear"]'))
+                        year_selector.select_by_value(self.year)
+                    except:
+                        print("Switching to the term and year failed")
 
                     row = driver.find_element(By.XPATH, '//*[@id="CertStatusGrid"]/table/tbody')
                     row_list = row.find_elements(By.TAG_NAME, 'tr')
@@ -168,6 +171,8 @@ class Browser:
                         else:
                             error_message("The file type specified does not exist")
                     self.curr_link = None
+                    time.sleep(2)
+                    driver.close()
             message("The process has finished")
             driver.quit()
             self.window.destroy_window()
