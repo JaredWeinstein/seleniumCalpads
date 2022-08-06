@@ -48,6 +48,8 @@ class Browser:
             if self.curr_school is not None:
                 index = self.lea_codes.index(self.curr_school)
                 self.lea_codes = self.lea_codes[index:]
+            counter = 0
+            total_links = 0
             for school in self.lea_codes:
                 lea_code = school[-7:]
                 options = webdriver.ChromeOptions()
@@ -105,8 +107,8 @@ class Browser:
                         link = r.find_element(By.XPATH,'.//*[1]/a').get_attribute('href')
                         term = r.find_element(By.XPATH, './/*[3]').text
                         cert_status = r.find_element(By.XPATH, './/*[6]').text
-                        str = term + " - " + cert_status
-                        term_list[str] = link
+                        string = term + " - " + cert_status
+                        term_list[string] = link
 
                     if dry_run:
                         self.window.update_term(term_list)
@@ -122,9 +124,13 @@ class Browser:
                     cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
                     for c in cert_reports:
                         link_list.append(c.get_attribute('href'))
+
+                    if total_links == 0:
+                        total_links = len(self.lea_codes) * len(link_list)
                     if self.curr_link is not None:
                         index = link_list.index(self.curr_link)
                         link_list = link_list[index:]
+                        total_links -= index
                     for curr_link in link_list:
                         self.curr_link = curr_link
                         driver.get(curr_link)
@@ -136,13 +142,18 @@ class Browser:
                             error_message("The page took too long to load")
                             self.window.get_browser_info(self.curr_school, self.curr_link)
                             driver.quit()
-
+                        try:
+                            status = Select(driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
+                            status.select_by_value(1)
+                        except:
+                            print("Failed to select status")
+                            pass
+                        time.sleep(2)
                         try:
                             submit = driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl00')
                             webdriver.ActionChains(driver).move_to_element(submit).click(submit).perform()
                         except:
                             pass
-
                         try:
                             print("Waiting for document " + curr_link)
                             WebDriverWait(driver, 300).until(EC.text_to_be_present_in_element_attribute(
@@ -170,6 +181,8 @@ class Browser:
                             webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
                         else:
                             error_message("The file type specified does not exist")
+                        counter += 1
+                        print("Downloaded " + str(counter) + "/" + str(total_links) + " reports.")
                     self.curr_link = None
                     time.sleep(2)
                     driver.close()
@@ -178,7 +191,10 @@ class Browser:
             self.window.destroy_window()
             quit()
         except:
-            error_message("Something went wrong. You can resume your download with the resume button")
+            if dry_run:
+                error_message("Something went wrong when trying to generate the terms")
+            else:
+                error_message("Something went wrong. You can resume your download with the resume button")
             self.window.get_browser_info(self.curr_school, self.curr_link)
 
     def switch_lea(self, lea):
