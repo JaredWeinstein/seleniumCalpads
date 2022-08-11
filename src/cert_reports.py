@@ -1,4 +1,3 @@
-import os
 import time
 from selenium import webdriver
 from selenium.common import TimeoutException
@@ -59,10 +58,10 @@ class Browser:
                         os.mkdir(school_dir)
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
-                # options.add_argument("--headless")
-                # options.add_argument("--no-sandbox")
-                # options.add_argument("--disable-gpu")
-                # options.add_argument("--window-size=1920,1000")
+                options.add_argument("--headless")
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-gpu")
+                options.add_argument("--window-size=1920,1000")
                 self.driver = webdriver.Chrome(resource_path('./driver/chromedriver.exe'), options=options)
                 with self.driver as driver:
                     driver.get(
@@ -88,7 +87,6 @@ class Browser:
                         error_message("Incorrect login/password")
                         self.window.enable_button()
                         driver.quit()
-
                     time.sleep(2)
                     try:
                         driver.get('https://www.calpads.org/StateReporting/Certification')
@@ -98,6 +96,7 @@ class Browser:
                         year_selector.select_by_value(self.year)
                     except:
                         print("Switching to the term and year failed")
+                        return
 
                     row = driver.find_element(By.XPATH, '//*[@id="CertStatusGrid"]/table/tbody')
                     row_list = row.find_elements(By.TAG_NAME, 'tr')
@@ -116,80 +115,91 @@ class Browser:
                         message("Please enter which report period you want now")
                         return
                     terms = list(term_list.keys())
-                    for t in terms:
-                        if self.term_input == t:
-                            driver.get(term_list[t])
-                    link_list = []
-                    cert_reports = driver.find_element(By.XPATH, '//*[@id="certReports"]')
-                    cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
-                    for c in cert_reports:
-                        link_list.append(c.get_attribute('href'))
+                    for t_input in self.term_input:
+                        for t in terms:
+                            if t_input == t:
+                                driver.get(term_list[t])
+                        link_list = []
+                        cert_reports = driver.find_element(By.XPATH, '//*[@id="certReports"]')
+                        cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
+                        for c in cert_reports:
+                            link_list.append(c.get_attribute('href'))
+                        if len(self.term_input) > 1:
+                            total_links = len(link_list)
 
-                    if total_links == 0:
-                        total_links = len(self.lea_codes) * len(link_list)
-                    if self.curr_link is not None:
-                        index = link_list.index(self.curr_link)
-                        link_list = link_list[index:]
-                        total_links -= index
-                    for curr_link in link_list:
-                        self.curr_link = curr_link
-                        driver.get(curr_link)
-                        try:
-                            WebDriverWait(driver, 30).until(
-                                EC.frame_to_be_available_and_switch_to_it(
-                                    (By.XPATH, '//*[@id="reports"]/div/div/div/iframe')))
-                        except TimeoutError:
-                            error_message("The page took too long to load")
-                            self.window.get_browser_info(self.curr_school, self.curr_link)
-                            driver.quit()
-                        try:
-                            status = Select(driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl07_ddValue'))
-                            status.select_by_value(1)
-                        except:
-                            print("Failed to select status")
-                            pass
-                        time.sleep(2)
-                        try:
-                            submit = driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl00')
-                            webdriver.ActionChains(driver).move_to_element(submit).click(submit).perform()
-                        except:
-                            pass
-                        try:
-                            print("Waiting for document " + curr_link)
-                            WebDriverWait(driver, 300).until(EC.text_to_be_present_in_element_attribute(
-                                (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled',
-                                'false'))
-                        except TimeoutError:
-                            error_message("The report took too long to load!")
-                            self.window.get_browser_info(self.curr_school, self.curr_link)
-                            driver.quit()
+                        if total_links == 0:
+                            total_links = len(self.lea_codes) * len(link_list)
+                        if self.curr_link is not None:
+                            index = link_list.index(self.curr_link)
+                            link_list = link_list[index:]
+                            total_links -= index
+                        for curr_link in link_list:
+                            self.curr_link = curr_link
+                            driver.get(curr_link)
+                            try:
+                                WebDriverWait(driver, 30).until(
+                                    EC.frame_to_be_available_and_switch_to_it(
+                                        (By.XPATH, '//*[@id="reports"]/div/div/div/iframe')))
+                            except TimeoutError:
+                                error_message("The page took too long to load")
+                                self.window.get_browser_info(self.curr_school, self.curr_link)
+                                driver.quit()
+                                return
+                            time.sleep(2)
+                            try:
+                                status = Select(driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl08_ctl07_ddValue"]'))
+                                status.select_by_index(1)
+                            except:
+                                pass
+                            time.sleep(2)
+                            try:
+                                submit = driver.find_element(By.ID, 'ReportViewer1_ctl08_ctl00')
+                                webdriver.ActionChains(driver).move_to_element(submit).click(submit).perform()
+                            except:
+                                pass
+                            try:
+                                print("Waiting for document " + curr_link)
+                                WebDriverWait(driver, 900).until(EC.text_to_be_present_in_element_attribute(
+                                    (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled',
+                                    'false'))
+                            except:
+                                error_message("The report took too long to load!")
+                                self.window.get_browser_info(self.curr_school, self.curr_link)
+                                driver.quit()
+                                return
 
-                        time.sleep(1)
-                        save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]')
-                        driver.execute_script("arguments[0].click();", save)
-                        time.sleep(1)
+                            time.sleep(1)
+                            save = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]')
+                            driver.execute_script("arguments[0].click();", save)
+                            time.sleep(1)
 
-                        file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
-                        if self.file_type == 'PDF':
-                            pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
-                            webdriver.ActionChains(driver).move_to_element(pdf).click(pdf).perform()
-                        elif self.file_type == 'CSV':
-                            csv = file.find_element(By.XPATH, "//*[text()='CSV']")
-                            webdriver.ActionChains(driver).move_to_element(csv).click(csv).perform()
-                        elif self.file_type == 'EXCEL':
-                            excel = file.find_element(By.XPATH, "//*[text()='EXCEL']")
-                            webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
-                        else:
-                            error_message("The file type specified does not exist")
-                        counter += 1
-                        print("Downloaded " + str(counter) + "/" + str(total_links) + " reports.")
-                    self.curr_link = None
+                            file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
+                            if self.file_type == 'PDF':
+                                pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
+                                webdriver.ActionChains(driver).move_to_element(pdf).click(pdf).perform()
+                            elif self.file_type == 'CSV':
+                                csv = file.find_element(By.XPATH, "//*[text()='CSV']")
+                                webdriver.ActionChains(driver).move_to_element(csv).click(csv).perform()
+                            elif self.file_type == 'EXCEL':
+                                excel = file.find_element(By.XPATH, "//*[text()='EXCEL']")
+                                webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
+                            else:
+                                error_message("The file type specified does not exist")
+                            counter += 1
+                            if len(self.term_input) > 1:
+                                print("Downloaded " + str(counter) + "/" + str(total_links) + " reports in " + t_input + " for " + school)
+                            else:
+                                print("Downloaded " + str(counter) + "/" + str(total_links) + " reports.")
+                        self.curr_link = None
+                        if len(self.term_input) > 1:
+                            counter = 0
                     time.sleep(2)
                     driver.close()
             message("The process has finished")
+            self.window.enable_button()
+            self.window.hide_resubmit()
             driver.quit()
-            self.window.destroy_window()
-            quit()
+
         except:
             if dry_run:
                 error_message("Something went wrong when trying to generate the terms")

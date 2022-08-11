@@ -1,6 +1,5 @@
 import sys
 import tkinter
-import tkinter.ttk as ttk
 from threading import Thread
 from tkinter import *
 import customtkinter
@@ -60,70 +59,75 @@ class Window:
         self.curr_pass = ""
         self.curr_user = ""
         self.curr_year = ""
-        self.curr_term = ""
+        self.curr_term = []
         self.curr_folder = ""
         self.curr_file_type = ""
         self.selected_schools = []
         self.link_list = []
         self.dry_run = False
 
-        window = customtkinter.CTk()
+        window = customtkinter.CTk(fg_color="#8bb586")
         window.geometry("900x650")
         window.title("CALPADS report fetcher")
         self.window = window
 
-        part_one = customtkinter.CTkFrame(window, width=890, height=430, borderwidth=5)
+        part_one = customtkinter.CTkFrame(window, width=890, height=430, border_color="black", borderwidth=5, fg_color="#dff0dd")
         part_one.pack()
-        part_two = customtkinter.CTkFrame(window, width=890, height=210, borderwidth=5)
+        part_two = customtkinter.CTkFrame(window, width=890, height=210, border_color="black", borderwidth=5, fg_color="#dff0dd")
         part_two.pack()
 
-        pt1_label = customtkinter.CTkLabel(window, text="Part 1", height=10, width=30, fg_color="gray70",
+        pt1_label = customtkinter.CTkLabel(window, text="Step 1", height=10, width=30, fg_color="#dff0dd", text_font='Avenir 15',
                                            text_color="black")
-        pt1_label.place(x=25, y=2)
-        pt2_label = customtkinter.CTkLabel(window, text="Part 2", height=10, width=30, fg_color="gray70",
+        pt1_label.place(x=25, y=7)
+        pt2_label = customtkinter.CTkLabel(window, text="Step 2", height=10, width=30, fg_color="#dff0dd", text_font='Avenir 15',
                                            text_color="black")
-        pt2_label.place(x=25, y=430)
+        pt2_label.place(x=25, y=435)
 
         # Widgets related to the user's username
-        u_label = customtkinter.CTkLabel(window, text="Calpads Username:", bg_color=None)
-        u_label.place(x=20, y=30)
-        self.u_box = customtkinter.CTkEntry(window, width=200)
-        self.u_box.place(x=180, y=30)
+        u_label = customtkinter.CTkLabel(window, text="Calpads Username:", fg_color="#dff0dd")
+        u_label.place(x=20, y=33)
+        self.u_box = customtkinter.CTkEntry(window, width=200, bg_color="#dff0dd")
+        self.u_box.place(x=180, y=33)
 
         # Widgets related to the user's password
-        p_label = customtkinter.CTkLabel(window, text="Calpads Password:")
+        p_label = customtkinter.CTkLabel(window, text="Calpads Password:", fg_color="#dff0dd")
         p_label.place(x=21, y=70)
-        self.p_box = customtkinter.CTkEntry(window, show="*", width=200)
+        self.p_box = customtkinter.CTkEntry(window, show="*", width=200, bg_color="#dff0dd")
         self.p_box.place(x=180, y=70)
 
         # Widgets relating to the lea code/school
-        l_label = customtkinter.CTkLabel(window, text="Search for and select the \n LEA Code/School  from the list:")
+
+        l_label = customtkinter.CTkLabel(window, fg_color="#dff0dd", text="Search for and select the \n LEA Code/School  from the list:")
         l_label.place(x=15, y=110)
-        self.l_box = customtkinter.CTkEntry(window, width=225)
+        self.l_box = customtkinter.CTkEntry(window, width=225, bg_color="#dff0dd")
         self.l_box.bind('<KeyRelease>', check)
         self.l_box.place(x=200, y=110)
-        self.l_list = Listbox(window, width=50, selectmode=SINGLE)
+        listbox_frame = customtkinter.CTkFrame(part_one, width=325, height=170, fg_color="#dff0dd")
+        listbox_frame.place(x=190, y=140)
+        self.l_list = Listbox(listbox_frame, width=50, selectmode=SINGLE)
         self.l_list.configure(exportselection=False)
-        self.l_list.place(x=200, y=140)
+        self.l_list.place(x=0, y=0)
         update(school)
 
-        current_l_label = customtkinter.CTkLabel(window, text="Currently Selected Schools")
+        current_l_label = customtkinter.CTkLabel(window, text="Currently Selected Schools", fg_color="#dff0dd")
         current_l_label.place(x=625, y=110)
-        self.add_lea = customtkinter.CTkButton(window, text="Add selected school", command=lambda: self.add_school())
+        self.add_lea = customtkinter.CTkButton(window, text="Add selected school", command=lambda: self.add_school(), bg_color="#dff0dd")
         self.add_lea.place(x=300, y=320)
-        self.current_l_list = Listbox(window, width=50, selectmode=SINGLE)
+        clistbox_frame = customtkinter.CTkFrame(part_one, width=325, height=170, fg_color="#dff0dd")
+        clistbox_frame.place(x=515, y=140)
+        self.current_l_list = Listbox(clistbox_frame, width=50, selectmode=SINGLE)
         self.current_l_list.configure(exportselection=False)
-        self.current_l_list.place(x=550, y=140)
+        self.current_l_list.place(x=0, y=0)
         current_l_remove = customtkinter.CTkButton(window, text="Remove selected school",
-                                                   command=lambda: self.remove_school())
+                                                   command=lambda: self.remove_school(), bg_color="#dff0dd")
         current_l_remove.place(x=625, y=320)
 
         # Widgets relating to the report year
-        y_label = customtkinter.CTkLabel(window, width=75, text="Report year:")
+        y_label = customtkinter.CTkLabel(window, width=75, text="Report year:", fg_color="#dff0dd", bg_color="#dff0dd")
         y_label.place(x=550, y=38)
         self.year = customtkinter.StringVar()
         self.year.set('Please choose the year')
-        y_list = customtkinter.CTkComboBox(self.window, variable=self.year, width=175, values=["2022-2023", "2021-2022",
+        y_list = customtkinter.CTkComboBox(self.window, variable=self.year, width=175, bg_color="#dff0dd", values=["2022-2023", "2021-2022",
                                                                                                "2020-2021", "2019-2020",
                                                                                                "2018-2019", "2017-2018",
                                                                                                "2016-2017",
@@ -131,45 +135,45 @@ class Window:
         y_list.place(x=635, y=40)
 
         self.dry_run_button = customtkinter.CTkButton(window, text="Generate all report periods\n for selected year",
-                                                      command=lambda: self.submit_dry_run())
+                                                      command=lambda: self.submit_dry_run(), bg_color="#dff0dd")
         self.dry_run_button.place(x=30, y=375)
 
         # Widgets relating to the term
-        t_label = customtkinter.CTkLabel(window, bg_color="gray91", text="Which report period?")
-        t_label.place(x=75, y=455)
+        t_label = customtkinter.CTkLabel(window, fg_color="#dff0dd", text="Which report period?")
+        t_label.place(x=75, y=460)
         self.term = customtkinter.StringVar()
         self.term.set("Select a Term")
         self.t_list = customtkinter.CTkOptionMenu(window, state="disabled", variable=self.term,
-                                                  values=["Select a Term"])
-        self.t_list.place(x=220, y=455)
+                                                  values=["Select a Term"], bg_color="#dff0dd", )
+        self.t_list.place(x=220, y=460)
 
         # Widgets related to the file type
-        file_type_label = customtkinter.CTkLabel(window, bg_color="gray91",
+        file_type_label = customtkinter.CTkLabel(window, fg_color="#dff0dd",
                                                  text="Choose what type of \n file to be exported:")
-        file_type_label.place(x=450, y=450)
+        file_type_label.place(x=450, y=460)
         self.file_type = customtkinter.StringVar()
         self.file_type.set("Select file type")
         self.file_type_list = customtkinter.CTkOptionMenu(window, state="disabled", variable=self.file_type,
-                                                          values=['PDF', 'EXCEL', 'CSV'])
-        self.file_type_list.place(x=600, y=455)
+                                                          values=['PDF', 'EXCEL', 'CSV'], bg_color="#dff0dd")
+        self.file_type_list.place(x=600, y=460)
 
         # Widgets related to the folder of the downloads
         self.folder_path = customtkinter.StringVar()
         self.folder_button = customtkinter.CTkButton(window, text="File selector", command=lambda: self.dir_searcher(),
-                                                     state=DISABLED)
+                                                     state=DISABLED, bg_color="#dff0dd")
         self.folder_button.place(x=285, y=530)
-        folder_label = customtkinter.CTkLabel(window, bg_color="gray91",
+        folder_label = customtkinter.CTkLabel(window, fg_color="#dff0dd",
                                               text="Select a folder for the downloads: \n (This app will create a new folder)")
         folder_label.place(x=75, y=530)
-        self.current_location = customtkinter.CTkLabel(window, textvariable=self.folder_path, bg_color="gray87")
+        self.current_location = customtkinter.CTkLabel(window, textvariable=self.folder_path, fg_color="#dff0dd")
         self.current_location.place(x=450, y=530)
 
         self.submit = customtkinter.CTkButton(window, text="Submit new data", command=lambda: self.submit_press(),
-                                              state="disabled")
+                                              state="disabled", bg_color="#dff0dd")
         self.submit.place(x=50, y=600)
 
         self.resubmit = customtkinter.CTkButton(window, text="Resume downloading?",
-                                                command=lambda: self.resubmit_press())
+                                                command=lambda: self.resubmit_press(), bg_color="#dff0dd")
 
         def on_closing():
             if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -196,15 +200,15 @@ class Window:
         self.curr_year = self.year.get()
         self.dry_run = True
         self.dry_run_button.configure(state="disabled")
-
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
 
     def update_term(self, term_list):
         self.link_list = term_list.values()
         temp_list = list(term_list.keys())
+        temp_list.append("All EOYs")
         self.t_list = customtkinter.CTkOptionMenu(self.window, variable=self.term, values=temp_list)
-        self.t_list.place(x=220, y=455)
+        self.t_list.place(x=220, y=460)
         self.t_list.configure(state="normal")
         self.file_type_list.configure(state="normal")
         self.folder_button.configure(state="normal")
@@ -217,17 +221,21 @@ class Window:
                 or self.file_type.get() == "Select file type":
             messagebox.showerror("Error", "Please input data for every field")
             return
+        self.curr_term.clear()
         self.curr_user = self.u_box.get()
         self.curr_pass = self.p_box.get()
-        self.curr_term = self.term.get()
-        self.curr_year = self.year.get()
         self.curr_file_type = self.file_type.get()
         self.dry_run_button.configure(state="disabled")
         self.submit.configure(state="disabled")
         self.dry_run = False
         self.curr_link = None
         self.curr_school = None
-        new_dir = os.path.join(self.folder_path.get(), self.year.get() + " " + self.term.get())
+        if self.term.get() == "All EOYs":
+            self.curr_term = self.t_list.values[2:-1]
+            new_dir = os.path.join(self.folder_path.get(), self.year.get() + " End of Years")
+        else:
+            self.curr_term.append(self.term.get())
+            new_dir = os.path.join(self.folder_path.get(), self.year.get() + " " + self.term.get())
         if not os.path.exists(new_dir):
             os.mkdir(new_dir)
         self.curr_folder = new_dir
@@ -248,6 +256,11 @@ class Window:
 
     def enable_button(self):
         self.submit.configure(state="normal")
+        self.dry_run_button.configure(state="normal")
+        self.resubmit.configure(state="normal")
+
+    def hide_resubmit(self):
+        self.resubmit.configure(state="disabled")
 
     def dir_searcher(self):
         filename = filedialog.askdirectory()
