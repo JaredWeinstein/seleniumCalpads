@@ -1,6 +1,6 @@
 # seleniumCalpads
 A selenium based python program designed to automatically navigate through calpads to download the reports from them
-
+- The github for this project can be found [here](https://github.com/6WeinsteinJ/seleniumCalpads)
 
 # Prerequisites
 - You will need to have [python](https://www.python.org/downloads/) and [pip](https://pip.pypa.io/en/stable/installation/) installed
@@ -22,3 +22,4 @@ Ex: `"00000000000000": "My School Name"`
 - CALPADS sometimes has invalid sessions which will the program can't detect,
 - Trying to change the year after generating the report periods requires generating the periods again, otherwise the desired reports may be different
 - The same school can be selected more than once
+
