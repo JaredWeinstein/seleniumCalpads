@@ -44,14 +44,20 @@ class Browser:
 
     def run_browser(self, dry_run):
         try:
+            # If the download failed, the curr_school lets the user resume where the program stopped
             if self.curr_school is not None:
                 index = self.lea_codes.index(self.curr_school)
                 self.lea_codes = self.lea_codes[index:]
+
             counter = 0
             total_links = 0
+
+            # Creates a new chrome webdriver for each school to change the download location of each
             for school in self.lea_codes:
                 lea_code = school[-7:]
                 options = webdriver.ChromeOptions()
+
+                # Makes a folder with the school name and changes the download location to that directory
                 if not dry_run:
                     school_dir = os.path.join(self.file_location, school[:-10])
                     if not os.path.exists(school_dir):
@@ -75,6 +81,8 @@ class Browser:
                         "--xWUNwYFQZhrEPIhX9fOV1Bin6fzjBMrAD371qhM9oJbKX12bdafltDL_Zz4rmgDTPktC"
                         "-U8hpuAE9czfpqbWuEMAotVLvaP9kja1fbhIOUF8fQd4rLwta5g0vdCU0DpnvoWCN7SbHjWkVyNsx7DO3xHmQR_YBj50f"
                         "-xW5SXuOlTs_xUXmNDCeJbwAGergTVZNdzKW-i%26x-client-SKU%3DID_NETSTANDARD2_0%26x-client-ver%3D5.5.0.0")
+
+                    # Code to find the login boxes and input the user data into them
                     assert "CALPADS" in driver.title
                     driver.find_element(By.ID, 'Username').send_keys(self.username)
                     driver.find_element(By.ID, 'Password').send_keys(self.password)
@@ -88,6 +96,8 @@ class Browser:
                         self.window.enable_button()
                         driver.quit()
                     time.sleep(2)
+
+
                     try:
                         driver.get('https://www.calpads.org/StateReporting/Certification')
                         self.switch_lea(lea_code)

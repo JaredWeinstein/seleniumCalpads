@@ -34,6 +34,7 @@ class Window:
         self.curr_school = None
         self.browser = None
 
+        # Checks if there is an update in the Entry Box
         def check(event):
             value = event.widget.get()
             if value == '':
@@ -49,6 +50,7 @@ class Window:
                     counter += 1
             update(data)
 
+        # Updates the listbox values
         def update(data):
             # Clear the Combobox
             self.l_list.delete(0, END)
@@ -187,8 +189,10 @@ class Window:
         window.protocol("WM_DELETE_WINDOW", on_closing)
         window.mainloop()
 
+    # Method to destroy the window
     def destroy_window(self):
         self.window.destroy()
+
 
     def submit_dry_run(self):
         if self.year.get() == 'Please choose the year' or self.u_box.get() == "" \
