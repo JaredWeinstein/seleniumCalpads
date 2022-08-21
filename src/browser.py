@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import Select
 from tkinter import messagebox
 import sys
 
+# Unused code for downloading the snapshot reports instead of the certification reports
 
 def error_message(string):
     messagebox.showerror("Error", string)

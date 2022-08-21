@@ -43,6 +43,10 @@ class Browser:
         self.driver.quit()
 
     def run_browser(self, dry_run):
+        """
+        Creates the headless Chrome browsers necessary to download the reports from CALPADS
+        :param dry_run: Boolean value for if the request is to generate report periods or download the reports
+        """
         try:
             # If the download failed, the curr_school lets the user resume where the program stopped
             if self.curr_school is not None:
@@ -97,7 +101,7 @@ class Browser:
                         driver.quit()
                     time.sleep(2)
 
-
+                    # Tries to switch to the year that was selected by the user
                     try:
                         driver.get('https://www.calpads.org/StateReporting/Certification')
                         self.switch_lea(lea_code)
@@ -111,6 +115,7 @@ class Browser:
                     row = driver.find_element(By.XPATH, '//*[@id="CertStatusGrid"]/table/tbody')
                     row_list = row.find_elements(By.TAG_NAME, 'tr')
 
+                    # Creates a dictionary mapping the report period to the link that leads to it
                     term_list = {}
                     for r in row_list:
                         link = r.find_element(By.XPATH,'.//*[1]/a').get_attribute('href')
@@ -119,6 +124,7 @@ class Browser:
                         string = term + " - " + cert_status
                         term_list[string] = link
 
+                    # Returns the information from the period list to update the GUI if it is a dry run
                     if dry_run:
                         self.window.update_term(term_list)
                         driver.close()
@@ -126,26 +132,38 @@ class Browser:
                         return
                     terms = list(term_list.keys())
                     for t_input in self.term_input:
+
+                        # Matches the user input with the list and goes to the link corresponding to the term
                         for t in terms:
                             if t_input == t:
                                 driver.get(term_list[t])
                         link_list = []
                         cert_reports = driver.find_element(By.XPATH, '//*[@id="certReports"]')
                         cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
+
+                        # Finds all the links under the header designated 'certReports' and adds them to a list
                         for c in cert_reports:
                             link_list.append(c.get_attribute('href'))
                         if len(self.term_input) > 1:
                             total_links = len(link_list)
 
+                        # Generates how many links are left to display to the user
                         if total_links == 0:
                             total_links = len(self.lea_codes) * len(link_list)
+
+                        # If the program crashed and the curr_link exists, start from that link in the list
                         if self.curr_link is not None:
                             index = link_list.index(self.curr_link)
                             link_list = link_list[index:]
                             total_links -= index
+
+                        # Iterates through every link in the list
                         for curr_link in link_list:
                             self.curr_link = curr_link
                             driver.get(curr_link)
+
+                            # Microsoft ReportViewer exists within a different frame so the program must switch to
+                            # looking within that frame otherwise selenium will be looking in the wrong place.
                             try:
                                 WebDriverWait(driver, 30).until(
                                     EC.frame_to_be_available_and_switch_to_it(
@@ -156,6 +174,10 @@ class Browser:
                                 driver.quit()
                                 return
                             time.sleep(2)
+
+                            # Some reports do not generate automatically upon page load requiring that you must
+                            # try to select the status by the first index (usually the default) and click on the
+                            # "View Report" button just in case.
                             try:
                                 status = Select(driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl08_ctl07_ddValue"]'))
                                 status.select_by_index(1)
@@ -167,6 +189,8 @@ class Browser:
                                 webdriver.ActionChains(driver).move_to_element(submit).click(submit).perform()
                             except:
                                 pass
+
+                            # Waits for the download symbol to become enabled, signaling that the report has generated
                             try:
                                 print("Waiting for document " + curr_link)
                                 WebDriverWait(driver, 900).until(EC.text_to_be_present_in_element_attribute(
@@ -183,6 +207,7 @@ class Browser:
                             driver.execute_script("arguments[0].click();", save)
                             time.sleep(1)
 
+                            # Program is set to only recognize these 3 file types
                             file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
                             if self.file_type == 'PDF':
                                 pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
@@ -195,6 +220,9 @@ class Browser:
                                 webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
                             else:
                                 error_message("The file type specified does not exist")
+
+                            # Prints how many reports are left
+                            # It prints differently depending on if "All EOYS" was selected or not
                             counter += 1
                             if len(self.term_input) > 1:
                                 print("Downloaded " + str(counter) + "/" + str(total_links) + " reports in " + t_input + " for " + school)
@@ -217,7 +245,12 @@ class Browser:
                 error_message("Something went wrong. You can resume your download with the resume button")
             self.window.get_browser_info(self.curr_school, self.curr_link)
 
+
     def switch_lea(self, lea):
+        """
+        Switches which school is selected in CALPADS
+        :param lea: The 7 digit lea code that corresponds to the school
+        """
         lea_select = Select(self.driver.find_element(By.XPATH, '//*[@id="org-select"]'))
         time.sleep(2)
         for option in lea_select.options:

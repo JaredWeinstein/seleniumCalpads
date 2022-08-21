@@ -247,6 +247,9 @@ class Window:
         t1.start()
 
     def remove_school(self):
+        """
+        removes the school that is selected in the current schools listbox
+        """
         if len(self.current_l_list.curselection()) != 0:
             self.selected_schools.remove(self.current_l_list.get(self.current_l_list.curselection()))
             idx = self.current_l_list.get(0, tkinter.END).index(
@@ -254,6 +257,9 @@ class Window:
             self.current_l_list.delete(idx)
 
     def add_school(self):
+        """
+        Adds the school that is selected in the listbox to the current schools listbox
+        """
         if len(self.l_list.curselection()) != 0:
             self.selected_schools.append(self.l_list.get(self.l_list.curselection()))
             self.current_l_list.insert(tkinter.END, self.l_list.get(self.l_list.curselection()))
@@ -280,6 +286,10 @@ class Window:
         self.window.quit()
 
     def get_browser_info(self, curr_school, link):
+        """
+        Gets the information of the current school/link that the program was on in the event of CALPADS crashing
+        or something weird happening
+        """
         self.submit.configure(state="normal")
         self.resubmit.configure(state="normal")
         self.dry_run_button.configure(state="normal")

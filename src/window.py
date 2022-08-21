@@ -8,6 +8,9 @@ from tkinter import messagebox
 import json
 import os
 
+# This code is unused code related to downloading the snapshot reports instead of the certification reports
+# If you want to use it, change the import in main.py from "from src.cert_reports_window import Window" to
+# "from src.window import Window"
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):

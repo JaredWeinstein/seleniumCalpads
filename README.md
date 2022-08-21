@@ -10,7 +10,6 @@ A selenium based python program designed to automatically navigate through calpa
 2. To add a school, add a comma after the last element input the full **14 digit** LEA code in quotation marks followed by a colon and then the school name in quotation marks.
 Ex: `"00000000000000": "My School Name"`
 
-
 # How To Package (.exe)
 1. Download pyinstaller through the command `pip install -U pyinstaller`
 2. Open up the Command Prompt
