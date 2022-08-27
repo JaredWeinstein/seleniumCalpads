@@ -13,7 +13,7 @@ Ex: `"00000000000000": "My School Name"`
 # How To Package (.exe)
 1. Download pyinstaller through the command `pip install -U pyinstaller`
 2. Open up the Command Prompt
-3. Navigate to the directory where the code is downloaded (tutorial on how to use cd [here](https://www.howtogeek.com/659411/how-to-change-directories-in-command-prompt-on-windows-10/)
+3. Navigate to the directory where the code is downloaded (tutorial on how to use cd [here](https://www.howtogeek.com/659411/how-to-change-directories-in-command-prompt-on-windows-10/ )
 4. Type the following command into the command prompt `pyinstaller --onefile --add-data "school_data.json;." --add-data "c:/users/blueb/appdata/local/programs/python/python310/lib/site-packages/customtkinter;customtkinter/" --add-binary "src/driver/chromedriver.exe;./driver" cli.py`
 5. The exe file will be located in the file named *dist* in the directory where the code was downloaded
 
