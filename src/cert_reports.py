@@ -207,16 +207,17 @@ class Browser:
                             driver.execute_script("arguments[0].click();", save)
                             time.sleep(1)
 
+
                             # Program is set to only recognize these 3 file types
                             file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
                             if self.file_type == 'PDF':
                                 pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
                                 webdriver.ActionChains(driver).move_to_element(pdf).click(pdf).perform()
                             elif self.file_type == 'CSV':
-                                csv = file.find_element(By.XPATH, "//*[text()='CSV']")
+                                csv = file.find_element(By.XPATH, "//*[text()='CSV (comma delimited)']")
                                 webdriver.ActionChains(driver).move_to_element(csv).click(csv).perform()
                             elif self.file_type == 'EXCEL':
-                                excel = file.find_element(By.XPATH, "//*[text()='EXCEL']")
+                                excel = file.find_element(By.XPATH, "//*[text()='Excel']")
                                 webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
                             else:
                                 error_message("The file type specified does not exist")
