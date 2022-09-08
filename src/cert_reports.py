@@ -68,9 +68,11 @@ class Browser:
                         os.mkdir(school_dir)
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
+
                 options.add_argument("--headless")
                 options.add_argument("--no-sandbox")
                 options.add_argument("--disable-gpu")
+
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
                 options.add_argument("--window-size=1920,1000")
@@ -198,7 +200,8 @@ class Browser:
                                 WebDriverWait(driver, 900).until(EC.text_to_be_present_in_element_attribute(
                                     (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled',
                                     'false'))
-                            except:
+                            except Exception as e:
+                                print(e)
                                 error_message("The report took too long to load!")
                                 self.window.get_browser_info(self.curr_school, self.curr_link)
                                 driver.quit()
@@ -241,7 +244,8 @@ class Browser:
             self.window.hide_resubmit()
             driver.quit()
 
-        except:
+        except Exception as e:
+            print(e)
             if dry_run:
                 error_message("Something went wrong when trying to generate the terms")
             else:
