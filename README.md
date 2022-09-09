@@ -5,6 +5,7 @@ A selenium based python program designed to automatically navigate through calpa
 # Prerequisites
 - You will need to have [python](https://www.python.org/downloads/) and [pip](https://pip.pypa.io/en/stable/installation/) installed
 - Install selenium through `pip install selenium`
+- Install customtkinter through `pip3 install customtkinter`
 
 # How To Change the School Data
 1. Navigate to the school_data.json file in an editor
