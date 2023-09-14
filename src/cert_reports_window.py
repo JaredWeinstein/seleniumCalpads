@@ -24,15 +24,42 @@ for i in school_data.keys():
     school.append(school_data[i] + " - " + i[-7:])
 school.sort()
 
+# Scuffed af way of sorting the reports cause they're in a weird format lmao
+def special_sort(e):
+    num = e.split()[0]
+    separated_nums = num.split(".")
+    if not separated_nums[0].isnumeric():
+        f_num = float(separated_nums[0][:-1]) * 10000 + ord(separated_nums[0][-1])
+    else:
+        f_num = int(separated_nums[0]) * 10000
+
+    if not separated_nums[1].isnumeric():
+        if "-" in separated_nums[1]:
+            separated_nums[1] = separated_nums[1].split("-")[0]
+        if len(separated_nums[1]) > 1:
+            s_num = float(separated_nums[1][:-1]) + float(ord(separated_nums[1][-1]) / 100)
+        else:
+            s_num = int(separated_nums[1])
+    else:
+        s_num = int(separated_nums[1])
+
+    return f_num + s_num
+
 
 class Window:
     customtkinter.set_appearance_mode("light")  # Modes: system (default), light, dark
     customtkinter.set_default_color_theme("green")  # Themes: blue (default), dark-blue, green
 
     def __init__(self):
-        self.curr_link = None
-        self.curr_school = None
+        self.curr_data = [None, None, None]
         self.browser = None
+
+        window = customtkinter.CTk(fg_color="#8bb586")
+        window.geometry("925x725")
+        window.title("CALPADS report fetcher")
+        window.resizable(False, False)
+        self.window = window
+        self.term = customtkinter.StringVar()
 
         # Checks if there is an update in the Entry Box
         def check(event):
@@ -61,29 +88,32 @@ class Window:
         self.curr_pass = ""
         self.curr_user = ""
         self.curr_year = ""
-        self.curr_term = []
         self.curr_folder = ""
-        self.curr_file_type = ""
         self.selected_schools = []
         self.link_list = []
         self.dry_run = False
+        self.reports_list = {}
+        self.cert_reports = {}
+        self.pdf_reports = []
+        self.csv_reports = []
+        self.excel_reports = []
+        self.report_count = 0
 
-        window = customtkinter.CTk(fg_color="#8bb586")
-        window.geometry("900x650")
-        window.title("CALPADS report fetcher")
-        self.window = window
-
-        part_one = customtkinter.CTkFrame(window, width=890, height=430, border_color="black", borderwidth=5, fg_color="#dff0dd")
+        part_one = customtkinter.CTkFrame(window, width=900, height=430, border_color="black", borderwidth=5,
+                                          fg_color="#dff0dd")
         part_one.pack()
-        part_two = customtkinter.CTkFrame(window, width=890, height=210, border_color="black", borderwidth=5, fg_color="#dff0dd")
-        part_two.pack()
+        self.step_two = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", borderwidth=5,
+                                               fg_color="#dff0dd")
+        self.step_two.pack(fill=tkinter.BOTH, pady=15, padx=5)
 
-        pt1_label = customtkinter.CTkLabel(window, text="Step 1", height=10, width=30, fg_color="#dff0dd", text_font='Avenir 15',
+        pt1_label = customtkinter.CTkLabel(window, text="Step 1", height=10, width=30, fg_color="#dff0dd",
+                                           text_font='Avenir 15',
                                            text_color="black")
         pt1_label.place(x=25, y=7)
-        pt2_label = customtkinter.CTkLabel(window, text="Step 2", height=10, width=30, fg_color="#dff0dd", text_font='Avenir 15',
-                                           text_color="black")
-        pt2_label.place(x=25, y=435)
+        self.pt2_label = customtkinter.CTkLabel(window, text="Step 2", height=10, width=30, fg_color="#dff0dd",
+                                                text_font='Avenir 15',
+                                                text_color="black")
+        self.pt2_label.place(x=25, y=435)
 
         # Widgets related to the user's username
         u_label = customtkinter.CTkLabel(window, text="Calpads Username:", fg_color="#dff0dd")
@@ -99,7 +129,8 @@ class Window:
 
         # Widgets relating to the lea code/school
 
-        l_label = customtkinter.CTkLabel(window, fg_color="#dff0dd", text="Search for and select the \n LEA Code/School  from the list:")
+        l_label = customtkinter.CTkLabel(window, fg_color="#dff0dd",
+                                         text="Search for and select the \n LEA Code/School  from the list:")
         l_label.place(x=15, y=110)
         self.l_box = customtkinter.CTkEntry(window, width=225, bg_color="#dff0dd")
         self.l_box.bind('<KeyRelease>', check)
@@ -113,7 +144,8 @@ class Window:
 
         current_l_label = customtkinter.CTkLabel(window, text="Currently Selected Schools", fg_color="#dff0dd")
         current_l_label.place(x=625, y=110)
-        self.add_lea = customtkinter.CTkButton(window, text="Add selected school", command=lambda: self.add_school(), bg_color="#dff0dd")
+        self.add_lea = customtkinter.CTkButton(window, text="Add selected school", command=lambda: self.add_school(),
+                                               bg_color="#dff0dd")
         self.add_lea.place(x=300, y=320)
         clistbox_frame = customtkinter.CTkFrame(part_one, width=325, height=170, fg_color="#dff0dd")
         clistbox_frame.place(x=515, y=140)
@@ -129,53 +161,113 @@ class Window:
         y_label.place(x=550, y=38)
         self.year = customtkinter.StringVar()
         self.year.set('Please choose the year')
-        y_list = customtkinter.CTkComboBox(self.window, variable=self.year, width=175, bg_color="#dff0dd", values=["2022-2023", "2021-2022",
-                                                                                               "2020-2021", "2019-2020",
-                                                                                               "2018-2019", "2017-2018",
-                                                                                               "2016-2017",
-                                                                                               "2015-2016"])
+        y_list = customtkinter.CTkComboBox(self.window, variable=self.year, width=175, bg_color="#dff0dd",
+                                           values=["2023-2024", "2022-2023", "2021-2022",
+                                                   "2020-2021", "2019-2020",
+                                                   "2018-2019", "2017-2018",
+                                                   "2016-2017",
+                                                   "2015-2016"])
         y_list.place(x=635, y=40)
-
         self.dry_run_button = customtkinter.CTkButton(window, text="Generate all report periods\n for selected year",
                                                       command=lambda: self.submit_dry_run(), bg_color="#dff0dd")
         self.dry_run_button.place(x=30, y=375)
 
-        # Widgets relating to the term
-        t_label = customtkinter.CTkLabel(window, fg_color="#dff0dd", text="Which report period?")
-        t_label.place(x=75, y=460)
-        self.term = customtkinter.StringVar()
-        self.term.set("Select a Term")
-        self.t_list = customtkinter.CTkOptionMenu(window, state="disabled", variable=self.term,
-                                                  values=["Select a Term"], bg_color="#dff0dd", )
-        self.t_list.place(x=220, y=460)
+        self.settings_f = customtkinter.CTkFrame(self.step_two, fg_color="#dff0dd")
+        self.settings_f.pack(ipadx=10, ipady=10, fill=tkinter.BOTH, side=tkinter.LEFT, expand=True)
+        self.reports_f = customtkinter.CTkFrame(self.step_two, fg_color="#dff0dd")
+        self.reports_f.pack(ipadx=10, ipady=10, fill=tkinter.BOTH, side=tkinter.RIGHT, expand=True)
 
-        # Widgets related to the file type
-        file_type_label = customtkinter.CTkLabel(window, fg_color="#dff0dd",
-                                                 text="Choose what type of \n file to be exported:")
-        file_type_label.place(x=450, y=460)
-        self.file_type = customtkinter.StringVar()
-        self.file_type.set("Select file type")
-        self.file_type_list = customtkinter.CTkOptionMenu(window, state="disabled", variable=self.file_type,
-                                                          values=['PDF', 'EXCEL', 'CSV'], bg_color="#dff0dd")
-        self.file_type_list.place(x=600, y=460)
+        # Widgets relating to the term
+        t_label = customtkinter.CTkLabel(self.settings_f, fg_color="#dff0dd", text="Which report period?")
+        t_label.grid(row=0, column=0, columnspan=2, sticky=W, padx=20, pady=10)
+        self.term.set("Select a Term")
+        self.t_list = customtkinter.CTkOptionMenu(self.settings_f, state="disabled", variable=self.term,
+                                                  values=["Select a Term"], bg_color="#dff0dd",
+                                                  command=self.update_report)
+        self.t_list.grid(row=0, column=1, sticky=E, pady=10)
+
+        # Widgets related to selecting the reports
+        self.reports_display = Listbox(self.reports_f, selectmode=EXTENDED, width=60, height=12)
+        self.reports_display.grid(row=0, column=0, padx=0, pady=(20, 0), sticky="nsew", rowspan=4)
+        pdf_button = customtkinter.CTkButton(self.reports_f, text="Add \n as PDF", width=70,
+                                             command=self.add_pdf_reports)
+        pdf_button.grid(row=0, column=1, padx=5)
+        excel_button = customtkinter.CTkButton(self.reports_f, text="Add \n as EXCEL", width=70,
+                                               command=self.add_excel_reports)
+        excel_button.grid(row=1, column=1, padx=5)
+        csv_button = customtkinter.CTkButton(self.reports_f, text="Add \n as CSV", width=70,
+                                             command=self.add_csv_reports)
+        csv_button.grid(row=2, column=1, padx=5)
+        view_button = customtkinter.CTkButton(self.reports_f, text="View Selected \n Reports",
+                                              command=self.view_reports)
+        view_button.grid(row=3, column=1, padx=5)
+
+        self.reports_f.columnconfigure(0, weight=10)
+        self.reports_f.columnconfigure(1, weight=1)
 
         # Widgets related to the folder of the downloads
         self.folder_path = customtkinter.StringVar()
-        self.folder_button = customtkinter.CTkButton(window, text="File selector", command=lambda: self.dir_searcher(),
-                                                     state=DISABLED, bg_color="#dff0dd")
-        self.folder_button.place(x=285, y=530)
-        folder_label = customtkinter.CTkLabel(window, fg_color="#dff0dd",
+        self.folder_button = customtkinter.CTkButton(self.settings_f, text="File selector",
+                                                     command=lambda: self.dir_searcher(),
+                                                     state=DISABLED, bg_color="#dff0dd", width=10)
+        self.folder_button.grid(row=1, column=1, sticky=E, pady=10)
+        folder_label = customtkinter.CTkLabel(self.settings_f, fg_color="#dff0dd",
                                               text="Select a folder for the downloads: \n (This app will create a new folder)")
-        folder_label.place(x=75, y=530)
-        self.current_location = customtkinter.CTkLabel(window, textvariable=self.folder_path, fg_color="#dff0dd")
-        self.current_location.place(x=450, y=530)
+        folder_label.grid(row=1, column=0, columnspan=2, sticky=W, padx=20, pady=10)
+        self.current_location = customtkinter.CTkLabel(self.settings_f, textvariable=self.folder_path,
+                                                       fg_color="#dff0dd")
+        self.current_location.grid(row=2, column=0, columnspan=3, pady=0, padx=20, sticky="nsew")
 
-        self.submit = customtkinter.CTkButton(window, text="Submit new data", command=lambda: self.submit_press(),
+
+        blank_row = customtkinter.CTkLabel(self.settings_f, text="", bg_color="#dff0dd", fg_color="#dff0dd")
+        blank_row.grid(row=3)
+        self.submit = customtkinter.CTkButton(self.settings_f, text="Submit new data",
+                                              command=lambda: self.submit_press(),
                                               state="disabled", bg_color="#dff0dd")
-        self.submit.place(x=50, y=600)
+        self.submit.grid(row=4, column=0, sticky=S, padx=20, pady=0)
 
-        self.resubmit = customtkinter.CTkButton(window, text="Resume downloading?",
+        self.resubmit = customtkinter.CTkButton(self.settings_f, text="Resume downloading?",
                                                 command=lambda: self.resubmit_press(), bg_color="#dff0dd")
+
+        # Widgets on the report viewer page to allow reports to be removed
+        self.viewer_f = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", borderwidth=5,
+                                               fg_color="#dff0dd")
+        back_button = customtkinter.CTkButton(self.viewer_f, text="Return", bg_color="#dff0dd",
+                                              command=self.return_press)
+        pdf_label = customtkinter.CTkLabel(self.viewer_f, fg_color="#dff0dd", text="PDF")
+        excel_label = customtkinter.CTkLabel(self.viewer_f, fg_color="#dff0dd", text="EXCEL")
+        csv_label = customtkinter.CTkLabel(self.viewer_f, fg_color="#dff0dd", text="CSV")
+        self.pdf_listbox = Listbox(self.viewer_f, selectmode=EXTENDED, width=45)
+        self.excel_listbox = Listbox(self.viewer_f, selectmode=EXTENDED, width=45)
+        self.csv_listbox = Listbox(self.viewer_f, selectmode=EXTENDED, width=45)
+        pdf_remove_button = customtkinter.CTkButton(self.viewer_f, text="Remove Selected PDF reports",
+                                                    bg_color="#dff0dd",
+                                                    command=self.delete_pdf_reports)
+        excel_remove_button = customtkinter.CTkButton(self.viewer_f, text="Remove Selected EXCEL reports",
+                                                      bg_color="#dff0dd",
+                                                      command=self.delete_excel_reports)
+        csv_remove_button = customtkinter.CTkButton(self.viewer_f, text="Remove Selected CSV reports",
+                                                    bg_color="#dff0dd",
+                                                    command=self.delete_csv_reports)
+
+        pdf_label.grid(row=0, column=1)
+        excel_label.grid(row=0, column=2)
+        csv_label.grid(row=0, column=3)
+        self.pdf_listbox.grid(row=1, column=1)
+        self.excel_listbox.grid(row=1, column=2)
+        self.csv_listbox.grid(row=1, column=3)
+        pdf_remove_button.grid(row=2, column=1)
+        excel_remove_button.grid(row=2, column=2)
+        csv_remove_button.grid(row=2, column=3)
+        back_button.grid(row=4, column=0)
+        self.viewer_f.rowconfigure(0, weight=1)
+        self.viewer_f.rowconfigure(1, weight=6)
+        self.viewer_f.rowconfigure(2, weight=1)
+        self.viewer_f.rowconfigure(3, weight=1)
+        self.viewer_f.columnconfigure(0, weight=2)
+        self.viewer_f.columnconfigure(0, weight=7)
+        self.viewer_f.columnconfigure(0, weight=7)
+        self.viewer_f.columnconfigure(0, weight=7)
 
         def on_closing():
             if messagebox.askokcancel("Quit", "Do you want to quit?"):
@@ -193,7 +285,6 @@ class Window:
     def destroy_window(self):
         self.window.destroy()
 
-
     def submit_dry_run(self):
         if self.year.get() == 'Please choose the year' or self.u_box.get() == "" \
                 or self.p_box.get() == "" or len(self.selected_schools) == 0:
@@ -202,49 +293,79 @@ class Window:
         self.curr_user = self.u_box.get()
         self.curr_pass = self.p_box.get()
         self.curr_year = self.year.get()
+        self.curr_data = [None, None, None]
         self.dry_run = True
         self.dry_run_button.configure(state="disabled")
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
 
-    def update_term(self, term_list):
-        self.link_list = term_list.values()
+    def update_term(self, term_list, cert_reports):
+        self.cert_reports = cert_reports
+        # self.term list is in the format of [term] + "-" + Certification status
         temp_list = list(term_list.keys())
-        temp_list.append("All EOYs")
-        self.t_list = customtkinter.CTkOptionMenu(self.window, variable=self.term, values=temp_list)
-        self.t_list.place(x=220, y=460)
+        self.t_list.configure(values=temp_list)
         self.t_list.configure(state="normal")
-        self.file_type_list.configure(state="normal")
+        self.t_list.grid(row=0, column=1, sticky=E, pady=10)
         self.folder_button.configure(state="normal")
         self.submit.configure(state="normal")
         self.dry_run_button.configure(state="normal")
 
     def submit_press(self):
-        if self.year.get() == 'Please choose the year' or self.term.get() == "Select a Term" or self.u_box.get() == "" \
+        if self.year.get() == 'Please choose the year' or self.u_box.get() == "" \
                 or self.p_box.get() == "" or len(self.selected_schools) == 0 or self.folder_path.get() == "" \
-                or self.file_type.get() == "Select file type":
+                or (len(self.csv_reports) == 0 and self.pdf_reports == 0 and self.excel_reports == 0):
             messagebox.showerror("Error", "Please input data for every field")
             return
-        self.curr_term.clear()
         self.curr_user = self.u_box.get()
         self.curr_pass = self.p_box.get()
-        self.curr_file_type = self.file_type.get()
         self.dry_run_button.configure(state="disabled")
         self.submit.configure(state="disabled")
         self.dry_run = False
-        self.curr_link = None
-        self.curr_school = None
-        if self.term.get() == "All EOYs":
-            self.curr_term = self.t_list.values[2:-1]
-            new_dir = os.path.join(self.folder_path.get(), self.year.get() + " End of Years")
-        else:
-            self.curr_term.append(self.term.get())
-            new_dir = os.path.join(self.folder_path.get(), self.year.get() + " " + self.term.get())
-        if not os.path.exists(new_dir):
-            os.mkdir(new_dir)
-        self.curr_folder = new_dir
+        self.curr_data = [None, None, None]
+
+        self.pdf_reports.sort()
+        self.excel_reports.sort()
+        self.csv_reports.sort()
+        self.report_count = 0
+        # Puts the data for the reports (term, name, and file type) into a dictionary
+        self.reports_list.clear()
+        for pdf_report in self.pdf_reports:
+            report_data = pdf_report.split("-")
+            term = report_data[0]
+            name = report_data[1]
+            if self.reports_list.get(term) is None:
+                self.reports_list[term] = []
+            self.reports_list[term].append((name, "pdf"))
+            self.report_count += 1
+        for excel_report in self.excel_reports:
+            report_data = excel_report.split("-")
+            term = report_data[0]
+            name = report_data[1]
+            if self.reports_list.get(term) is None:
+                self.reports_list[term] = []
+            self.reports_list[term].append((name, "excel"))
+            self.report_count += 1
+        for csv_report in self.csv_reports:
+            report_data = csv_report.split("-")
+            term = report_data[0]
+            name = report_data[1]
+            if self.reports_list.get(term) is None:
+                self.reports_list[term] = []
+            self.reports_list[term].append((name, "csv"))
+            self.report_count += 1
+        self.report_count *= len(self.selected_schools)
+        # Makes a new folder for every term that exists
+        year_dir = os.path.join(self.folder_path.get(), self.year.get())
+        if not os.path.exists(year_dir):
+            os.mkdir(year_dir)
+        self.curr_folder = year_dir
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
+
+    def browser_create(self):
+        self.browser = Browser(self.curr_user, self.curr_pass, self.selected_schools, self.curr_year,
+                               self.curr_folder, self, self.curr_data, self.reports_list, self.report_count)
+        self.browser.run_browser(self.dry_run)
 
     def remove_school(self):
         """
@@ -277,15 +398,10 @@ class Window:
         self.folder_path.set(filename)
         self.current_location['text'] = ("The current download location is: " + self.folder_path.__str__())
 
-    def browser_create(self):
-        self.browser = Browser(self.curr_user, self.curr_pass, self.selected_schools, self.curr_term, self.curr_year,
-                               self.curr_folder, self.curr_file_type, self, self.curr_school, self.curr_link)
-        self.browser.run_browser(self.dry_run)
-
     def quit_program(self):
         self.window.quit()
 
-    def get_browser_info(self, curr_school, link):
+    def get_browser_info(self, curr_data, report_count):
         """
         Gets the information of the current school/link that the program was on in the event of CALPADS crashing
         or something weird happening
@@ -293,11 +409,11 @@ class Window:
         self.submit.configure(state="normal")
         self.resubmit.configure(state="normal")
         self.dry_run_button.configure(state="normal")
-        if curr_school is not None:
+        self.report_count = report_count
+        if curr_data[0] is not None:
             print("browser info saved")
-            self.resubmit.place(x=200, y=600)
-            self.curr_link = link
-            self.curr_school = curr_school
+            self.resubmit.grid(row=4, column=1, sticky=S, padx=20, pady=0)
+            self.curr_data = curr_data
 
     def resubmit_press(self):
         self.submit.configure(state="disabled")
@@ -305,3 +421,88 @@ class Window:
         self.dry_run_button.configure(state="disabled")
         t1 = Thread(target=self.browser_create, daemon=True)
         t1.start()
+
+    def update_report(self, event):
+        term = self.term.get()
+        if term != "Select a Term":
+            all_reports_list = self.cert_reports[term]
+            all_reports_list.sort(key=special_sort)
+            self.reports_display.delete(0, END)
+            for reports in all_reports_list:
+                self.reports_display.insert(END, reports)
+
+    def add_pdf_reports(self):
+        reports = self.reports_display.curselection()
+        if len(reports) != 0:
+            for r in reports:
+                term = (self.term.get().split("-"))[0][0:-1]
+                temp = term + "-" + self.reports_display.get(r)
+                if self.pdf_reports.count(temp) == 0:
+                    self.pdf_reports.append(temp)
+
+    def add_excel_reports(self):
+        reports = self.reports_display.curselection()
+        if len(reports) != 0:
+            for r in reports:
+                term = (self.term.get().split("-"))[0][0:-1]
+                temp = term + "-" + self.reports_display.get(r)
+                if self.excel_reports.count(temp) == 0:
+                    self.excel_reports.append(temp)
+
+    def add_csv_reports(self):
+        reports = sorted(self.reports_display.curselection(), reverse=True)
+        if len(reports) != 0:
+            for r in reports:
+                term = (self.term.get().split("-"))[0][0:-1]
+                temp = term + "-" + self.reports_display.get(r)
+                if self.csv_reports.count(temp) == 0:
+                    self.csv_reports.append(temp)
+
+    def delete_pdf_reports(self):
+        selected = sorted(self.pdf_listbox.curselection(), reverse=True)
+        if len(selected) != 0:
+            for s in selected:
+                self.pdf_reports.remove(self.pdf_listbox.get(s))
+                self.pdf_listbox.delete(s)
+        print(self.pdf_reports)
+
+    def delete_excel_reports(self):
+        selected = sorted(self.excel_listbox.curselection(), reverse=True)
+        if len(selected) != 0:
+            for s in selected:
+                self.excel_reports.remove(self.excel_listbox.get(s))
+                self.excel_listbox.delete(s)
+        print(self.excel_reports)
+
+    def delete_csv_reports(self):
+        selected = sorted(self.csv_listbox.curselection(), reverse=True)
+        if len(selected) != 0:
+            for s in selected:
+                self.csv_reports.remove(self.csv_listbox.get(s))
+                self.csv_listbox.delete(s)
+        print(self.csv_reports)
+
+    def view_reports(self):
+        self.step_two.pack_forget()
+        self.viewer_f.pack(fill=tkinter.BOTH, pady=15, padx=5)
+        self.pt2_label.lift()
+        self.csv_listbox.delete(0, END)
+        self.pdf_listbox.delete(0, END)
+        self.excel_listbox.delete(0, END)
+        for csv in self.csv_reports:
+            self.csv_listbox.insert(END, csv)
+        for pdf in self.pdf_reports:
+            self.pdf_listbox.insert(END, pdf)
+        for excel in self.excel_reports:
+            self.excel_listbox.insert(END, excel)
+
+    def return_press(self):
+        self.viewer_f.pack_forget()
+        self.step_two.pack(fill=tkinter.BOTH, pady=15, padx=5)
+        self.pt2_label.lift()
+
+    def reset_process(self):
+        self.pdf_reports.clear()
+        self.excel_reports.clear()
+        self.csv_reports.clear()
+        self.curr_data = [None, None, None]
