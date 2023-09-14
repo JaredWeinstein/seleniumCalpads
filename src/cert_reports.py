@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import Select
 from tkinter import messagebox
 import sys
 import os
+import glob
 
 
 def error_message(string):
@@ -27,17 +28,18 @@ def resource_path(relative_path):
 
 
 class Browser:
-    def __init__(self, username, password, lea_codes, term_input, year, file_location, file_type, window, curr_school, curr_link):
+    def __init__(self, username, password, lea_codes, year, file_location,  window, curr_data, report_list, report_count):
         self.username = username
         self.password = password
         self.lea_codes = lea_codes
-        self.term_input = term_input
         self.year = year
         self.file_location = file_location.replace("/", "\\")
-        self.file_type = file_type
         self.window = window
-        self.curr_link = curr_link
-        self.curr_school = curr_school
+        self.curr_data = curr_data
+        # report_list is in the format of term (key) -> tuple with [name, file type] (value)
+        self.report_list = report_list
+        self.download_location = ""
+        self.report_count = report_count
 
     def close_browser(self):
         self.driver.quit()
@@ -49,13 +51,13 @@ class Browser:
         """
         try:
             # If the download failed, the curr_school lets the user resume where the program stopped
-            if self.curr_school is not None:
-                index = self.lea_codes.index(self.curr_school)
+            if self.curr_data[0] is not None:
+                index = self.lea_codes.index(self.curr_data[0])
                 self.lea_codes = self.lea_codes[index:]
 
             counter = 0
-            total_links = 0
-
+            total_links = self.report_count
+            rerun_flag = False
             # Creates a new chrome webdriver for each school to change the download location of each
             for school in self.lea_codes:
                 lea_code = school[-7:]
@@ -64,14 +66,15 @@ class Browser:
                 # Makes a folder with the school name and changes the download location to that directory
                 if not dry_run:
                     school_dir = os.path.join(self.file_location, school[:-10])
+                    self.download_location = school_dir
                     if not os.path.exists(school_dir):
                         os.mkdir(school_dir)
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
 
-                options.add_argument("--headless")
-                options.add_argument("--no-sandbox")
-                options.add_argument("--disable-gpu")
+                # options.add_argument("--headless")
+                # options.add_argument("--no-sandbox")
+                # options.add_argument("--disable-gpu")
 
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
@@ -109,11 +112,13 @@ class Browser:
                     try:
                         driver.get('https://www.calpads.org/StateReporting/Certification')
                         self.switch_lea(lea_code)
-                        self.curr_school = school
+                        self.curr_data[0] = school
                         year_selector = Select(driver.find_element(By.XPATH, '//*[@id="AcademicYear"]'))
                         year_selector.select_by_value(self.year)
-                    except:
+                    except Exception as error:
+                        print(error)
                         print("Switching to the term and year failed")
+                        self.window.enable_button()
                         return
 
                     row = driver.find_element(By.XPATH, '//*[@id="CertStatusGrid"]/table/tbody')
@@ -130,41 +135,67 @@ class Browser:
 
                     # Returns the information from the period list to update the GUI if it is a dry run
                     if dry_run:
-                        self.window.update_term(term_list)
+                        reports = {}
+                        key_list = list(term_list.keys())
+                        value_list = list(term_list.values())
+                        counter = 0
+
+                        # Gets the name for the certification reports
+                        for link in value_list:
+                            driver.get(link)
+                            cert_reports = driver.find_element(By.XPATH, '//*[@id="certReports"]')
+                            cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
+                            cert_report_names = []
+                            for c in cert_reports:
+                                cert_report_names.append(c.text)
+                            reports[key_list[counter]] = cert_report_names
+                            counter += 1
+                        self.window.update_term(term_list, reports)
                         driver.close()
                         message("Please enter which report period you want now")
                         return
-                    terms = list(term_list.keys())
-                    for t_input in self.term_input:
 
+                    terms = list(term_list.keys())
+                    if self.curr_data[2] is not None:
+                        rerun_flag = True
+                    for t_input in self.report_list.keys():
+                        if rerun_flag == True:
+                            if t_input != self.curr_data[2]:
+                                continue
+                            else:
+                                rerun_flag = False
                         # Matches the user input with the list and goes to the link corresponding to the term
                         for t in terms:
-                            if t_input == t:
+                            if t.find(t_input) != -1:
                                 driver.get(term_list[t])
+                                break
+                        self.curr_data[2] = t_input
                         link_list = []
                         cert_reports = driver.find_element(By.XPATH, '//*[@id="certReports"]')
-                        cert_reports = cert_reports.find_elements(By.TAG_NAME, "a")
-
                         # Finds all the links under the header designated 'certReports' and adds them to a list
-                        for c in cert_reports:
-                            link_list.append(c.get_attribute('href'))
-                        if len(self.term_input) > 1:
-                            total_links = len(link_list)
+                        for reports in self.report_list[t_input]:
 
-                        # Generates how many links are left to display to the user
-                        if total_links == 0:
-                            total_links = len(self.lea_codes) * len(link_list)
+                            # Needs to be put in a try block because some schools don't have reports
+                            # that other schools have for some reason
+                            try:
+                                link_list.append((cert_reports.find_element(By.XPATH, "//a[contains(text(), '" + reports[0] + "')]").get_attribute('href'), reports[1]))
+                            except Exception as e:
+                                print("The report (" + reports[0] + ") was not found in school (" + school + ")!")
+                                total_links -= 1
+                                pass
 
-                        # If the program crashed and the curr_link exists, start from that link in the list
-                        if self.curr_link is not None:
-                            index = link_list.index(self.curr_link)
-                            link_list = link_list[index:]
-                            total_links -= index
-
+                        # If the program crashed and the current link exists, start from that link in the list
+                        if self.curr_data[1] is not None:
+                            index = 0
+                            for links in link_list:
+                                if links[0] == self.curr_data[1]:
+                                    link_list = link_list[index:]
+                                    break
+                                index += 1
                         # Iterates through every link in the list
                         for curr_link in link_list:
-                            self.curr_link = curr_link
-                            driver.get(curr_link)
+                            self.curr_data[1] = curr_link[0]
+                            driver.get(curr_link[0])
 
                             # Microsoft ReportViewer exists within a different frame so the program must switch to
                             # looking within that frame otherwise selenium will be looking in the wrong place.
@@ -174,7 +205,7 @@ class Browser:
                                         (By.XPATH, '//*[@id="reports"]/div/div/div/iframe')))
                             except TimeoutError:
                                 error_message("The page took too long to load")
-                                self.window.get_browser_info(self.curr_school, self.curr_link)
+                                self.window.get_browser_info(self.curr_data, self.report_count)
                                 driver.quit()
                                 return
                             time.sleep(2)
@@ -196,14 +227,14 @@ class Browser:
 
                             # Waits for the download symbol to become enabled, signaling that the report has generated
                             try:
-                                print("Waiting for document " + curr_link)
+                                print("Waiting for document " + curr_link[0])
                                 WebDriverWait(driver, 900).until(EC.text_to_be_present_in_element_attribute(
                                     (By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_ButtonLink"]'), 'aria-disabled',
                                     'false'))
                             except Exception as e:
                                 print(e)
                                 error_message("The report took too long to load!")
-                                self.window.get_browser_info(self.curr_school, self.curr_link)
+                                self.window.get_browser_info(self.curr_data, self.report_count)
                                 driver.quit()
                                 return
 
@@ -212,46 +243,54 @@ class Browser:
                             driver.execute_script("arguments[0].click();", save)
                             time.sleep(1)
 
-
                             # Program is set to only recognize these 3 file types
                             file = driver.find_element(By.XPATH, '//*[@id="ReportViewer1_ctl09_ctl04_ctl00_Menu"]')
-                            if self.file_type == 'PDF':
+                            if curr_link[1] == 'pdf':
                                 pdf = file.find_element(By.XPATH, "//*[text()='PDF']")
                                 webdriver.ActionChains(driver).move_to_element(pdf).click(pdf).perform()
-                            elif self.file_type == 'CSV':
+                            elif curr_link[1] == 'csv':
                                 csv = file.find_element(By.XPATH, "//*[text()='CSV (comma delimited)']")
                                 webdriver.ActionChains(driver).move_to_element(csv).click(csv).perform()
-                            elif self.file_type == 'EXCEL':
+                            elif curr_link[1] == 'excel':
                                 excel = file.find_element(By.XPATH, "//*[text()='Excel']")
                                 webdriver.ActionChains(driver).move_to_element(excel).click(excel).perform()
                             else:
                                 error_message("The file type specified does not exist")
+                            time.sleep(4)
+                            if curr_link[1] == 'excel':
+                                type = r"\*" + "xlsx"
+                            else:
+                                type = r"\*" + curr_link[1]
+                            list_of_files = glob.glob(self.download_location + type)  # * means all if need specific format then *.csv
+                            latest_file = max(list_of_files, key=os.path.getmtime)
+                            base_name = os.path.basename(os.path.normpath(latest_file))
+                            new_name = self.download_location + "/"  + t_input + " - " + base_name
+                            if not os.path.exists(new_name):
+                                os.rename(self.download_location + "/" + base_name, new_name)
 
                             # Prints how many reports are left
-                            # It prints differently depending on if "All EOYS" was selected or not
                             counter += 1
-                            if len(self.term_input) > 1:
-                                print("Downloaded " + str(counter) + "/" + str(total_links) + " reports in " + t_input + " for " + school)
-                            else:
-                                print("Downloaded " + str(counter) + "/" + str(total_links) + " reports.")
-                        self.curr_link = None
-                        if len(self.term_input) > 1:
-                            counter = 0
+                            self.report_count -= 1
+                            print("Downloaded " + str(counter) + "/" + str(total_links) + " reports")
+
                     time.sleep(2)
                     driver.close()
+                    self.curr_data[1] = None
+                    self.curr_data[2] = None
             message("The process has finished")
             self.window.enable_button()
             self.window.hide_resubmit()
+            self.window.reset_process()
             driver.quit()
 
         except Exception as e:
             print(e)
             if dry_run:
+                self.curr_data[0] = None
                 error_message("Something went wrong when trying to generate the terms")
             else:
                 error_message("Something went wrong. You can resume your download with the resume button")
-            self.window.get_browser_info(self.curr_school, self.curr_link)
-
+            self.window.get_browser_info(self.curr_data,self.report_count)
 
     def switch_lea(self, lea):
         """
@@ -268,7 +307,8 @@ class Browser:
             lea_select.select_by_value(op_value)
         except NameError:
             error_message("LEA code could not be found")
-            self.window.get_browser_info(self.curr_school, self.curr_link)
+            self.window.get_browser_info(self.curr_data,self.report_count)
             self.driver.quit()
         time.sleep(2)
-
+    #
+    # def get_all_reports(self):
