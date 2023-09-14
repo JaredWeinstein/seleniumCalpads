@@ -72,9 +72,9 @@ class Browser:
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
 
-                # options.add_argument("--headless")
-                # options.add_argument("--no-sandbox")
-                # options.add_argument("--disable-gpu")
+                options.add_argument("--headless")
+                options.add_argument("--no-sandbox")
+                options.add_argument("--disable-gpu")
 
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
