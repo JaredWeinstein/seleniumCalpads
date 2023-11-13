@@ -27,7 +27,7 @@ Ex: `"00000000000000": "My School Name"`
 - The same school can be selected more than once
 
 # Updating Chromedriver
-- The link can be obtained from [this](https://chromedriver.chromium.org/) link
+- The chromedriver download can be obtained from [this](https://chromedriver.chromium.org/) link
 - Chromedriver can be updated by downloading all of the code and going to src -> driver -> and switching out the chromedriver.exe file with the new file
 
 
