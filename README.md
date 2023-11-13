@@ -17,7 +17,7 @@ Ex: `"00000000000000": "My School Name"`
 2. Open up the Command Prompt
 3. Navigate to the directory where the code is downloaded (tutorial on how to use cd [here](https://www.howtogeek.com/659411/how-to-change-directories-in-command-prompt-on-windows-10/ )
 4. Find the location of the customtkinter package by typing in `pip show customtkinter` in the terminal and look under location
-5. Type the following command into the command prompt `pyinstaller --onefile --add-data "school_data.json;." --add-data "[CUSTOMTKINTER LOCATION]"/customtkinter;customtkinter/" --add-binary "src/driver/chromedriver.exe;./driver" cli.py`
+5. Type the following command into the command prompt `pyinstaller --onefile --add-data "school_data.json;." --add-data "[CUSTOMTKINTER LOCATION]/customtkinter;customtkinter/" --add-binary "src/driver/chromedriver.exe;./driver" cli.py`
 6. The exe file will be located in the file named *dist* in the directory where the code was downloaded
 
 #
