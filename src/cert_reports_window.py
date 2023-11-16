@@ -99,19 +99,17 @@ class Window:
         self.excel_reports = []
         self.report_count = 0
 
-        part_one = customtkinter.CTkFrame(window, width=900, height=430, border_color="black", borderwidth=5,
+        part_one = customtkinter.CTkFrame(window, width=900, height=430, border_color="black", border_width=5,
                                           fg_color="#dff0dd")
         part_one.pack()
-        self.step_two = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", borderwidth=5,
+        self.step_two = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", border_width=5,
                                                fg_color="#dff0dd")
         self.step_two.pack(fill=tkinter.BOTH, pady=15, padx=5)
 
         pt1_label = customtkinter.CTkLabel(window, text="Step 1", height=10, width=30, fg_color="#dff0dd",
-                                           text_font='Avenir 15',
                                            text_color="black")
         pt1_label.place(x=25, y=7)
         self.pt2_label = customtkinter.CTkLabel(window, text="Step 2", height=10, width=30, fg_color="#dff0dd",
-                                                text_font='Avenir 15',
                                                 text_color="black")
         self.pt2_label.place(x=25, y=435)
 
@@ -230,7 +228,7 @@ class Window:
                                                 command=lambda: self.resubmit_press(), bg_color="#dff0dd")
 
         # Widgets on the report viewer page to allow reports to be removed
-        self.viewer_f = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", borderwidth=5,
+        self.viewer_f = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", border_width=5,
                                                fg_color="#dff0dd")
         back_button = customtkinter.CTkButton(self.viewer_f, text="Return", bg_color="#dff0dd",
                                               command=self.return_press)
