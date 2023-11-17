@@ -24,6 +24,7 @@ for i in school_data.keys():
     school.append(school_data[i] + " - " + i[-7:])
 school.sort()
 
+
 # Scuffed af way of sorting the reports cause they're in a weird format lmao
 def special_sort(e):
     num = e.split()[0]
@@ -99,10 +100,10 @@ class Window:
         self.excel_reports = []
         self.report_count = 0
 
-        part_one = customtkinter.CTkFrame(window, width=900, height=430, border_color="black", border_width=5,
+        part_one = customtkinter.CTkFrame(window, width=900, height=430, border_color="#dff0dd", border_width=5,
                                           fg_color="#dff0dd")
         part_one.pack()
-        self.step_two = customtkinter.CTkFrame(window, width=900, height=300, border_color="black", border_width=5,
+        self.step_two = customtkinter.CTkFrame(window, width=900, height=300, border_color="#dff0dd", border_width=5,
                                                fg_color="#dff0dd")
         self.step_two.pack(fill=tkinter.BOTH, pady=15, padx=5)
 

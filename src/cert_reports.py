@@ -6,6 +6,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from tkinter import messagebox
+from selenium.webdriver.chrome.service import Service
+
+
 import sys
 import os
 import glob
@@ -72,6 +75,7 @@ class Browser:
                     prefs = {'download.default_directory': school_dir}
                     options.add_experimental_option('prefs', prefs)
 
+                service = Service(resource_path('./driver/chromedriver.exe'))
                 options.add_argument("--headless")
                 options.add_argument("--no-sandbox")
                 options.add_argument("--disable-gpu")
@@ -79,7 +83,7 @@ class Browser:
                 options.add_experimental_option("excludeSwitches", ["enable-automation"])
                 options.add_experimental_option('useAutomationExtension', False)
                 options.add_argument("--window-size=1920,1000")
-                self.driver = webdriver.Chrome(resource_path('./driver/chromedriver.exe'), options=options)
+                self.driver = webdriver.Chrome(service=service, options=options)
                 with self.driver as driver:
                     driver.get(
                         "https://identity.calpads.org/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id"
@@ -287,7 +291,7 @@ class Browser:
             print(e)
             if dry_run:
                 self.curr_data[0] = None
-                error_message("Something went wrong when trying to generate the terms")
+                error_message(e)
             else:
                 error_message("Something went wrong. You can resume your download with the resume button")
             self.window.get_browser_info(self.curr_data,self.report_count)
