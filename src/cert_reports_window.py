@@ -161,7 +161,7 @@ class Window:
         self.year = customtkinter.StringVar()
         self.year.set('Please choose the year')
         y_list = customtkinter.CTkComboBox(self.window, variable=self.year, width=175, bg_color="#dff0dd",
-                                           values=["2023-2024", "2022-2023", "2021-2022",
+                                           values=["2024-2025", "2023-2024", "2022-2023", "2021-2022",
                                                    "2020-2021", "2019-2020",
                                                    "2018-2019", "2017-2018",
                                                    "2016-2017",
