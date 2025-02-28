@@ -9,8 +9,8 @@ import json
 import os
 
 # This code is unused code related to downloading the snapshot reports instead of the certification reports
-# If you want to use it, change the import in main.py from "from src.cert_reports_window import Window" to
-# "from src.window import Window"
+# If you want to use it, choange the import in main.py from "from src.cert_reports_window import Window" to
+# "from src.window import Windw"
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -92,7 +92,7 @@ class Window:
         self.year = StringVar()
         self.year.set('Please choose the year')
         y_list = ttk.Combobox(self.window, textvariable=self.year)
-        y_list['values'] = ["2023-2024","2022-2023", "2021-2022", "2020-2021", "2019-2020", "2018-2019", "2017-2018", "2016-2017",
+        y_list['values'] = ["2024-2025","2023-2024","2022-2023", "2021-2022", "2020-2021", "2019-2020", "2018-2019", "2017-2018", "2016-2017",
                             "2015-2016"]
         y_list.place(x=200, y=320)
 
